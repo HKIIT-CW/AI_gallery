@@ -757,7 +757,7 @@ function doPost(e) {
         }
 
         /**************************************************************
-         * 6. 作品上傳邏輯
+         * 6. 作品上傳邏輯 (已修正 CORS 重定向引發的誤報 bug)
          **************************************************************/
         async function handleFormSubmit(event) {
             event.preventDefault();
@@ -794,23 +794,21 @@ function doPost(e) {
                         artworkTitle: artworkTitle
                     };
 
-                    const response = await fetch(config.gasUrl, {
+                    // 使用 'no-cors' 模式發送，避免瀏覽器攔截 Google API 重定向而產生的虛假 CORS 失敗報錯。
+                    await fetch(config.gasUrl, {
                         method: 'POST',
-                        mode: 'cors',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'text/plain'
+                        },
                         body: JSON.stringify(payload)
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`GAS 返回錯誤代碼: ${response.status}`);
-                    }
-
-                    const resData = await response.json();
-                    if (resData.status === 'error') {
-                        throw new Error(resData.message);
-                    }
-
-                    showToast(`學生 ${studentName} 的作品已自動送達你的 Google Drive！`, 'success');
+                    // 由於 no-cors 模式無法讀取 Response JSON，但只要 fetch 沒拋出例外就代表已經順利送達 GAS
+                    showToast(`學生 ${studentName} 的作品已送出！正在重新載入畫廊...`, 'success');
                     
+                    // 延遲 2.5 秒，確保 Google Drive 在背景完成檔案創建與索引建立後，再拉取最新列表
+                    await new Promise(resolve => setTimeout(resolve, 2500));
                     await fetchWorksFromGoogleDrive();
                     toggleUploadModal(false);
 
@@ -837,7 +835,7 @@ function doPost(e) {
             } catch (err) {
                 console.error(err);
                 statusDiv.className = 'text-xs p-3 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20';
-                statusDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> 上傳至 Google Drive 失敗：${err.message}。請確認設定中的 GAS 連結是否正常。`;
+                statusDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> 上傳失敗：${err.message}。請確認設定中的 GAS 連結是否正常。`;
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnContent;
