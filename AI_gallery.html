@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 學生線上畫廊 | AI Student Art Gallery</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['Noto Serif TC', 'Playfair Display', 'serif'],
+                    },
+                    boxShadow: {
+                        'spotlight': '0 0 50px rgba(255, 244, 224, 0.15)',
+                        'frame': '0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.7)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 畫廊牆面微弱射燈效果 */
+        .gallery-wall {
+            background: radial-gradient(circle at 50% -20%, #2c2c35 0%, #111115 80%);
+        }
+        /* 懸掛畫線 */
+        .hanging-wire {
+            width: 2px;
+            background: linear-gradient(to bottom, #111 0%, #555 50%, #222 100%);
+            height: 60px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-serif flex flex-col justify-between">
+
+    <!-- 頂部導覽列 -->
+    <header class="bg-slate-950/80 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-500 text-slate-950 p-2 rounded-lg">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-wide text-amber-100">AI 學生藝術畫廊</h1>
+                    <p class="text-xs text-slate-400">AI Student Art Gallery</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <!-- 模式顯示 -->
+                <span id="modeBadge" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    本地模擬模式
+                </span>
+                
+                <!-- GitHub 設定按鈕 -->
+                <button onclick="toggleSettingsModal(true)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm transition-colors flex items-center gap-2 border border-slate-700">
+                    <i class="fa-brands fa-github"></i>
+                    設定 GitHub 連線
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="flex-grow">
+        
+        <!-- ==================== 1. 畫廊牆面區 (3個畫架) ==================== -->
+        <section class="gallery-wall relative py-12 px-4 shadow-inner border-b border-slate-950 min-h-[480px] flex flex-col justify-center">
+            <!-- 頂部聚光燈亮點 -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[150px] bg-amber-200/5 blur-[80px] rounded-full pointer-events-none"></div>
+
+            <div class="max-w-7xl mx-auto w-full">
+                <div class="text-center mb-6">
+                    <span class="text-xs uppercase tracking-[0.2em] text-amber-400/70 font-sans">主展牆</span>
+                    <h2 class="text-lg text-slate-400 font-light mt-1">選拔中的作品展位 (最多 3 幅)</h2>
+                </div>
+
+                <!-- 三個畫架網格 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto px-4 mt-4">
+                    
+                    <!-- 畫架 1 -->
+                    <div class="flex flex-col items-center">
+                        <div class="hanging-wire"></div>
+                        <div id="easel-0" onclick="removeFromEasel(0)" class="relative w-full aspect-[4/3] bg-slate-950/40 rounded-lg border-2 border-dashed border-slate-700 hover:border-amber-500/50 transition-all duration-300 shadow-spotlight group cursor-pointer flex flex-col items-center justify-center p-2 overflow-hidden">
+                            <!-- 預設空狀態 -->
+                            <div class="easel-empty text-center p-6 group-hover:scale-105 transition-transform duration-300">
+                                <i class="fa-regular fa-image text-4xl text-slate-600 group-hover:text-amber-500/70 mb-3 block"></i>
+                                <p class="text-xs text-slate-500 group-hover:text-slate-400">點擊下方作品即可上牆</p>
+                                <span class="inline-block mt-2 px-2.5 py-0.5 bg-slate-800 text-slate-500 rounded text-[10px] font-sans">展位 1</span>
+                            </div>
+                            <!-- 裝載作品容器 -->
+                            <div class="easel-active hidden w-full h-full relative">
+                                <img src="" alt="作品" class="w-full h-full object-contain rounded shadow-frame">
+                                <!-- 遮罩提示 -->
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-center p-4">
+                                    <i class="fa-regular fa-trash-can text-red-400 text-2xl mb-1"></i>
+                                    <p class="text-xs text-red-300">點擊將作品取下</p>
+                                </div>
+                                <!-- 底部標籤 -->
+                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-950/90 text-amber-100 text-[11px] px-3 py-1 rounded border border-slate-800 shadow-md pointer-events-none whitespace-nowrap">
+                                    <span class="student-name font-bold"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 畫架 2 -->
+                    <div class="flex flex-col items-center">
+                        <div class="hanging-wire"></div>
+                        <div id="easel-1" onclick="removeFromEasel(1)" class="relative w-full aspect-[4/3] bg-slate-950/40 rounded-lg border-2 border-dashed border-slate-700 hover:border-amber-500/50 transition-all duration-300 shadow-spotlight group cursor-pointer flex flex-col items-center justify-center p-2 overflow-hidden">
+                            <!-- 預設空狀態 -->
+                            <div class="easel-empty text-center p-6 group-hover:scale-105 transition-transform duration-300">
+                                <i class="fa-regular fa-image text-4xl text-slate-600 group-hover:text-amber-500/70 mb-3 block"></i>
+                                <p class="text-xs text-slate-500 group-hover:text-slate-400">點擊下方作品即可上牆</p>
+                                <span class="inline-block mt-2 px-2.5 py-0.5 bg-slate-800 text-slate-500 rounded text-[10px] font-sans">展位 2</span>
+                            </div>
+                            <!-- 裝載作品容器 -->
+                            <div class="easel-active hidden w-full h-full relative">
+                                <img src="" alt="作品" class="w-full h-full object-contain rounded shadow-frame">
+                                <!-- 遮罩提示 -->
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-center p-4">
+                                    <i class="fa-regular fa-trash-can text-red-400 text-2xl mb-1"></i>
+                                    <p class="text-xs text-red-300">點擊將作品取下</p>
+                                </div>
+                                <!-- 底部標籤 -->
+                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-950/90 text-amber-100 text-[11px] px-3 py-1 rounded border border-slate-800 shadow-md pointer-events-none whitespace-nowrap">
+                                    <span class="student-name font-bold"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 畫架 3 -->
+                    <div class="flex flex-col items-center">
+                        <div class="hanging-wire"></div>
+                        <div id="easel-2" onclick="removeFromEasel(2)" class="relative w-full aspect-[4/3] bg-slate-950/40 rounded-lg border-2 border-dashed border-slate-700 hover:border-amber-500/50 transition-all duration-300 shadow-spotlight group cursor-pointer flex flex-col items-center justify-center p-2 overflow-hidden">
+                            <!-- 預設空狀態 -->
+                            <div class="easel-empty text-center p-6 group-hover:scale-105 transition-transform duration-300">
+                                <i class="fa-regular fa-image text-4xl text-slate-600 group-hover:text-amber-500/70 mb-3 block"></i>
+                                <p class="text-xs text-slate-500 group-hover:text-slate-400">點擊下方作品即可上牆</p>
+                                <span class="inline-block mt-2 px-2.5 py-0.5 bg-slate-800 text-slate-500 rounded text-[10px] font-sans">展位 3</span>
+                            </div>
+                            <!-- 裝載作品容器 -->
+                            <div class="easel-active hidden w-full h-full relative">
+                                <img src="" alt="作品" class="w-full h-full object-contain rounded shadow-frame">
+                                <!-- 遮罩提示 -->
+                                <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-center p-4">
+                                    <i class="fa-regular fa-trash-can text-red-400 text-2xl mb-1"></i>
+                                    <p class="text-xs text-red-300">點擊將作品取下</p>
+                                </div>
+                                <!-- 底部標籤 -->
+                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-950/90 text-amber-100 text-[11px] px-3 py-1 rounded border border-slate-800 shadow-md pointer-events-none whitespace-nowrap">
+                                    <span class="student-name font-bold"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. 功能操作與學生作品預覽區 ==================== -->
+        <section class="max-w-7xl mx-auto px-6 py-10">
+            
+            <!-- 上傳與標題控制列 -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-slate-800 pb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-photo-film text-amber-500"></i>
+                        學生作品預覽區
+                    </h3>
+                    <p class="text-sm text-slate-400 mt-1">
+                        點擊下方任何作品，即可即時指派至展牆空的畫架上。
+                    </p>
+                </div>
+                
+                <!-- 上傳作品按鈕 -->
+                <button onclick="toggleUploadModal(true)" class="w-full md:w-auto px-6 py-3 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 font-semibold rounded-xl shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                    上傳學生作品
+                </button>
+            </div>
+
+            <!-- 空白提示 (當預覽區無作品時) -->
+            <div id="noWorksView" class="hidden text-center py-16 bg-slate-950/40 border border-slate-800 rounded-2xl p-8">
+                <i class="fa-regular fa-folder-open text-5xl text-slate-600 mb-4 block"></i>
+                <h4 class="text-slate-300 font-semibold text-lg">目前尚無作品</h4>
+                <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                    請點擊上方「上傳學生作品」按鈕，為學生上傳他們精心創作的藝術畫作。
+                </p>
+            </div>
+
+            <!-- 學生作品 Grid 預覽列表 -->
+            <div id="studentWorksGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <!-- 動態生成的學生作品卡片將插入於此 -->
+            </div>
+
+        </section>
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-slate-950 text-slate-500 text-xs py-6 border-t border-slate-900 mt-12 text-center">
+        <p>© 2026 AI Student Art Gallery. 本網頁專為學生作品展示與 GitHub 雲端協作而設計。</p>
+    </footer>
+
+    <!-- ==================== 彈出視窗 1：上傳作品 Modal ==================== -->
+    <div id="uploadModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="px-6 py-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i>
+                    上傳學生作品
+                </h3>
+                <button onclick="toggleUploadModal(false)" class="text-slate-400 hover:text-slate-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="uploadForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <!-- 拖曳或點選上傳區域 -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-2">作品檔案</label>
+                    <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-950/50">
+                        <input type="file" id="fileInput" accept="image/*" class="hidden" required onchange="handleFileSelect(this)">
+                        <div id="dropZonePrompt">
+                            <i class="fa-regular fa-image text-3xl text-slate-500 mb-2"></i>
+                            <p class="text-sm text-slate-300">點擊選擇圖片，或拖曳圖片至此</p>
+                            <p class="text-[10px] text-slate-500 mt-1">支援 PNG, JPG, GIF 等格式</p>
+                        </div>
+                        <div id="dropZonePreview" class="hidden flex flex-col items-center">
+                            <img id="imagePreview" src="" class="max-h-36 object-contain rounded border border-slate-700 mb-2">
+                            <span class="text-xs text-amber-400" id="fileNameLabel">file_name.jpg</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 學生姓名 -->
+                <div>
+                    <label for="studentName" class="block text-sm font-medium text-slate-400 mb-1">創作者姓名 / 學生學號</label>
+                    <input type="text" id="studentName" required placeholder="例如：張小明" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition-colors">
+                </div>
+
+                <!-- 作品名稱 -->
+                <div>
+                    <label for="artworkTitle" class="block text-sm font-medium text-slate-400 mb-1">作品名稱 (選填)</label>
+                    <input type="text" id="artworkTitle" placeholder="例如：未來的太空城市" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition-colors">
+                </div>
+
+                <!-- 狀態訊息 -->
+                <div id="uploadStatus" class="hidden text-xs p-3 rounded-lg"></div>
+
+                <!-- 提交按鈕 -->
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="toggleUploadModal(false)" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors text-sm font-semibold">
+                        取消
+                    </button>
+                    <button type="submit" id="submitBtn" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl transition-colors text-sm font-semibold flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-circle-check"></i>
+                        確認上傳
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== 彈出視窗 2：GitHub 連線設定 Modal ==================== -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-brands fa-github text-amber-500"></i>
+                    GitHub 雲端整合設定
+                </h3>
+                <button onclick="toggleSettingsModal(false)" class="text-slate-400 hover:text-slate-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    設定後，學生在網頁上傳的圖片會<strong class="text-amber-400">直接寫入你的 GitHub Repo</strong>，且此網頁能直接讀取該資料夾。這可以達到「無資料庫」的全靜態雲端儲存效果。
+                </p>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">GitHub 帳號 (Username)</label>
+                        <input type="text" id="ghOwner" placeholder="例如：my-github-username" class="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">倉庫名稱 (Repository Name)</label>
+                        <input type="text" id="ghRepo" placeholder="例如：student-art-gallery" class="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">分支名稱 (Branch)</label>
+                        <input type="text" id="ghBranch" placeholder="例如：main" class="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">作品儲存目錄 (Folder Path)</label>
+                        <input type="text" id="ghPath" placeholder="例如：uploads (不可包含開頭斜線 /)" class="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">GitHub 個人訪問權杖 (PAT Token)</label>
+                            <a href="https://github.com/settings/tokens/new" target="_blank" class="text-[10px] text-amber-500 hover:underline">
+                                去申請 Token <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </a>
+                        </div>
+                        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxx" class="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono">
+                        <span class="text-[10px] text-slate-500 block mt-1">需勾選 "repo" 或具備 Contents 寫入權限，將安全地保存在此瀏覽器本地中。</span>
+                    </div>
+                </div>
+
+                <!-- 教師部署提示與原始碼黏貼 -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
+                    <p class="font-bold text-amber-400 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info"></i>
+                        教師提示：如何讓學生上傳不需重複輸入？
+                    </p>
+                    <p class="text-slate-400 leading-relaxed">
+                        當你設定好 GitHub 資訊後，可以點擊下方「產生配置貼代碼」按鈕，將生成的配置區塊複製到 <code>index.html</code> 程式碼中。這樣所有學生打開此網頁，不需輸入金鑰即能直接上載！
+                    </p>
+                    <button onclick="generateHardcodedConfig()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-200 rounded font-semibold transition-colors mt-1">
+                        產生預填配置代碼
+                    </button>
+                    <textarea id="configOutput" class="hidden w-full h-16 bg-slate-900 border border-slate-800 text-amber-200/80 p-2 font-mono text-[10px] rounded mt-2 focus:outline-none" readonly></textarea>
+                </div>
+
+                <!-- 動作按鈕 -->
+                <div class="flex gap-3">
+                    <button onclick="toggleSettingsModal(false)" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors text-sm font-semibold">
+                        取消
+                    </button>
+                    <button onclick="saveSettings()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl transition-colors text-sm font-semibold flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        儲存連線設定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自訂提示小工具 -->
+    <div id="toastMessage" class="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl border bg-slate-950 border-slate-800 text-slate-200 translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 pointer-events-none">
+        <span id="toastIcon" class="text-lg"></span>
+        <span id="toastText" class="text-sm">訊息</span>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        /**************************************************************
+         * 1. 預設配置與狀態初始化
+         **************************************************************/
+        
+        // 【重要】如果你想把設定「直接硬編碼」寫死，方便發布，請直接修改以下對象的「''」空值：
+        const HARDCODED_CONFIG = {
+            owner: '',    // 填入你的 GitHub 帳號
+            repo: '',     // 填入你的專案倉庫名稱
+            branch: '',   // 填入你的分支名稱，例如 'main'
+            path: '',     // 填入資料夾路徑，例如 'uploads'
+            token: ''     // 填入你的 GitHub PAT Token (ghp_開頭)
+        };
+
+        // 系統變數狀態
+        let config = {
+            owner: HARDCODED_CONFIG.owner || localStorage.getItem('gh_owner') || '',
+            repo: HARDCODED_CONFIG.repo || localStorage.getItem('gh_repo') || '',
+            branch: HARDCODED_CONFIG.branch || localStorage.getItem('gh_branch') || 'main',
+            path: HARDCODED_CONFIG.path || localStorage.getItem('gh_path') || 'uploads',
+            token: HARDCODED_CONFIG.token || localStorage.getItem('gh_token') || ''
+        };
+
+        // 目前被選擇在畫架（0, 1, 2）上的作品數據
+        let activeEasels = [null, null, null];
+        
+        // 學生作品列表
+        let studentWorks = [];
+
+        // 暫存當前準備上傳的文件
+        let selectedFileBase64 = '';
+        let selectedFileName = '';
+
+        // 預設 AI 藝術作品 (當沒有連線 GitHub 且本機沒有自創作品時的展示資料)
+        const MOCK_WORKS = [
+            { id: 'mock-1', title: '星際編織者', author: 'AI 學員 A01', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80', isMock: true },
+            { id: 'mock-2', title: '奇點大爆炸', author: 'AI 學員 B05', url: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=600&q=80', isMock: true },
+            { id: 'mock-3', title: '數字霓虹森林', author: 'AI 學員 C12', url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80', isMock: true },
+            { id: 'mock-4', title: '賽博朋克貓咪', author: 'AI 學員 D09', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80', isMock: true },
+            { id: 'mock-5', title: '迷幻水母之境', author: 'AI 學員 E03', url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=600&q=80', isMock: true }
+        ];
+
+        /**************************************************************
+         * 2. 視窗控制與 Toast 提示
+         **************************************************************/
+        function showToast(text, type = 'success') {
+            const toast = document.getElementById('toastMessage');
+            const icon = document.getElementById('toastIcon');
+            const toastText = document.getElementById('toastText');
+
+            if (type === 'success') {
+                icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+                toast.className = "fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl border bg-slate-950 border-emerald-500/20 text-slate-200 translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-2 pointer-events-auto";
+            } else if (type === 'error') {
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-400"></i>';
+                toast.className = "fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl border bg-slate-950 border-rose-500/20 text-slate-200 translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-2 pointer-events-auto";
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-circle-info text-blue-400"></i>';
+                toast.className = "fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-2xl border bg-slate-950 border-blue-500/20 text-slate-200 translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-2 pointer-events-auto";
+            }
+
+            toastText.textContent = text;
+            
+            // 3秒後消失
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('pointer-events-auto');
+            }, 3000);
+        }
+
+        function toggleUploadModal(show) {
+            const modal = document.getElementById('uploadModal');
+            if (show) {
+                // 重設表單
+                document.getElementById('uploadForm').reset();
+                document.getElementById('dropZonePrompt').classList.remove('hidden');
+                document.getElementById('dropZonePreview').classList.add('hidden');
+                document.getElementById('imagePreview').src = '';
+                selectedFileBase64 = '';
+                selectedFileName = '';
+                const statusDiv = document.getElementById('uploadStatus');
+                statusDiv.className = 'hidden text-xs p-3 rounded-lg';
+                statusDiv.innerHTML = '';
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function toggleSettingsModal(show) {
+            const modal = document.getElementById('settingsModal');
+            if (show) {
+                // 預填當前配置
+                document.getElementById('ghOwner').value = config.owner;
+                document.getElementById('ghRepo').value = config.repo;
+                document.getElementById('ghBranch').value = config.branch;
+                document.getElementById('ghPath').value = config.path;
+                document.getElementById('ghToken').value = config.token;
+                
+                document.getElementById('configOutput').classList.add('hidden');
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        /**************************************************************
+         * 3. 拖曳與檔案選擇處理
+         **************************************************************/
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        // 綁定拖曳點選
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-amber-500', 'bg-amber-500/5');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-amber-500', 'bg-amber-500/5');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-amber-500', 'bg-amber-500/5');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(fileInput);
+            }
+        });
+
+        // 讀取上傳的圖片檔案並轉成 Base64
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('請上傳有效的圖片檔案格式！', 'error');
+                return;
+            }
+
+            selectedFileName = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                selectedFileBase64 = e.target.result.split(',')[1]; // 只取 Base64 純字串
+                
+                // 更新預覽 UI
+                document.getElementById('dropZonePrompt').classList.add('hidden');
+                document.getElementById('dropZonePreview').classList.remove('hidden');
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('fileNameLabel').textContent = file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /**************************************************************
+         * 4. 數據加載與更新 UI (GitHub VS 本地模擬)
+         **************************************************************/
+        // 判斷是否設定好 GitHub 組態
+        function hasValidGitHubConfig() {
+            return config.owner && config.repo && config.token;
+        }
+
+        // 網頁載入時初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            updateModeIndicator();
+            loadGalleryData();
+        });
+
+        // 更新介面頂部的連線模式標記
+        function updateModeIndicator() {
+            const badge = document.getElementById('modeBadge');
+            if (hasValidGitHubConfig()) {
+                badge.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1.5";
+                badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-indigo-400 animate-pulse"></span> GitHub 雲端同步中`;
+            } else {
+                badge.className = "px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5";
+                badge.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> 本地模擬展示模式`;
+            }
+        }
+
+        // 載入畫作列表
+        async function loadGalleryData() {
+            if (hasValidGitHubConfig()) {
+                await fetchWorksFromGitHub();
+            } else {
+                // 如果沒有設定 GitHub，先抓取 LocalStorage 裡的本機自上傳，否則配上 MOCK 數據
+                const localSaved = localStorage.getItem('local_gallery_works');
+                if (localSaved) {
+                    studentWorks = JSON.parse(localSaved);
+                } else {
+                    studentWorks = [...MOCK_WORKS];
+                }
+                renderPreviewGrid();
+            }
+        }
+
+        // 從 GitHub 抓取檔案列表
+        async function fetchWorksFromGitHub() {
+            const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}?ref=${config.branch}`;
+            
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `token ${config.token}`,
+                        'Accept': 'application/vnd.github+json'
+                    }
+                });
+
+                if (response.status === 404) {
+                    // 目錄不存在可能表示是新專案，回傳空陣列
+                    studentWorks = [];
+                    renderPreviewGrid();
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`API 返回錯誤: ${response.status}`);
+                }
+
+                const files = await response.json();
+                
+                // 過濾並過濾出圖片檔案
+                const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
+                const filteredFiles = Array.isArray(files) ? files.filter(file => {
+                    const nameLower = file.name.toLowerCase();
+                    return imageExtensions.some(ext => nameLower.endsWith(ext));
+                }) : [];
+
+                // 轉換為我們應用的標準資料格式
+                studentWorks = filteredFiles.map(file => {
+                    // 檔案命名規則假設為: [作者名]_[作品名]_[亂數].png
+                    const cleanName = file.name.substring(0, file.name.lastIndexOf('.'));
+                    const parts = cleanName.split('_');
+                    const author = parts[0] || '佚名學生';
+                    const title = parts[1] || '學生作品';
+
+                    return {
+                        id: file.sha,
+                        title: title,
+                        author: author,
+                        url: file.download_url,
+                        download_url: file.download_url,
+                        path: file.path,
+                        isMock: false
+                    };
+                });
+
+                // GitHub 反向排序(使最新上載的作品在最前面)
+                studentWorks.reverse();
+                renderPreviewGrid();
+
+            } catch (err) {
+                console.error('從 GitHub 讀取失敗:', err);
+                showToast('無法從 GitHub 讀取作品，已自動還原成模擬數據。', 'error');
+                // 讀取失敗降級到模擬模式
+                studentWorks = [...MOCK_WORKS];
+                renderPreviewGrid();
+            }
+        }
+
+        // 渲染作品預覽區
+        function renderPreviewGrid() {
+            const grid = document.getElementById('studentWorksGrid');
+            const noWorks = document.getElementById('noWorksView');
+
+            if (studentWorks.length === 0) {
+                grid.classList.add('hidden');
+                noWorks.classList.remove('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            noWorks.classList.add('hidden');
+            grid.innerHTML = '';
+
+            studentWorks.forEach(work => {
+                // 判斷此作品是否已上牆
+                const isOnWall = activeEasels.some(item => item && item.id === work.id);
+                
+                const card = document.createElement('div');
+                card.className = `group bg-slate-950 rounded-xl overflow-hidden border ${isOnWall ? 'border-amber-500/50 ring-2 ring-amber-500/20 opacity-65' : 'border-slate-800 hover:border-slate-600'} transition-all duration-300 flex flex-col justify-between cursor-pointer`;
+                card.onclick = () => {
+                    if (isOnWall) {
+                        showToast('此作品已經在展牆上了！', 'info');
+                    } else {
+                        placeOnEasel(work);
+                    }
+                };
+
+                card.innerHTML = `
+                    <div class="relative aspect-square w-full bg-slate-900 overflow-hidden">
+                        <img src="${work.url}" alt="${work.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300'">
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                            ${isOnWall ? 
+                                '<span class="text-xs font-semibold px-3 py-1.5 bg-amber-500 text-slate-950 rounded-lg"><i class="fa-solid fa-check mr-1"></i> 已在上展牆</span>' : 
+                                '<span class="text-xs font-semibold px-3 py-1.5 bg-slate-200 text-slate-950 rounded-lg"><i class="fa-solid fa-arrow-up-from-bracket mr-1"></i> 放置於展牆</span>'
+                            }
+                        </div>
+                    </div>
+                    <div class="p-3 bg-slate-950">
+                        <h4 class="text-xs font-bold text-slate-200 truncate">${work.title}</h4>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-[10px] text-slate-400 truncate max-w-[70%]">創作者: ${work.author}</span>
+                            ${work.isMock ? '<span class="text-[9px] bg-slate-800 text-slate-500 px-1 py-0.2 rounded font-sans">DEMO</span>' : ''}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /**************************************************************
+         * 5. 畫架上牆互動邏輯
+         **************************************************************/
+        // 將作品放入空的畫架
+        function placeOnEasel(work) {
+            // 尋找第一個有空位的畫架（0 -> 1 -> 2）
+            const emptyIndex = activeEasels.indexOf(null);
+
+            if (emptyIndex === -1) {
+                showToast('三個展覽畫架都已滿囉！點擊牆上的任何作品即可將它取下。', 'error');
+                return;
+            }
+
+            // 更新畫架數據
+            activeEasels[emptyIndex] = work;
+            updateEaselUI(emptyIndex);
+            
+            // 刷新預覽列表（更新高亮狀態）
+            renderPreviewGrid();
+            showToast(`成功將 ${work.author} 的作品《${work.title}》放置到 展位 ${emptyIndex + 1} 上！`, 'success');
+        }
+
+        // 將作品從特定畫架移除
+        function removeFromEasel(index) {
+            const work = activeEasels[index];
+            if (!work) return; // 空位點擊無效
+
+            activeEasels[index] = null;
+            updateEaselUI(index);
+            
+            // 刷新預覽列表（解凍選取狀態）
+            renderPreviewGrid();
+            showToast(`已從 展位 ${index + 1} 取下該作品。`, 'info');
+        }
+
+        // 動態刷新畫架 DOM 節點
+        function updateEaselUI(index) {
+            const easelElement = document.getElementById(`easel-${index}`);
+            const emptyContainer = easelElement.querySelector('.easel-empty');
+            const activeContainer = easelElement.querySelector('.easel-active');
+            
+            const work = activeEasels[index];
+
+            if (work) {
+                // 隱藏空狀態，顯示作品
+                emptyContainer.classList.add('hidden');
+                activeContainer.classList.remove('hidden');
+
+                const img = activeContainer.querySelector('img');
+                const label = activeContainer.querySelector('.student-name');
+
+                img.src = work.url;
+                label.textContent = `${work.author} - 《${work.title}》`;
+                
+                // 動態添加動人懸掛微震動畫
+                easelElement.classList.remove('border-dashed', 'border-slate-700');
+                easelElement.classList.add('border-slate-800');
+            } else {
+                // 隱藏作品，回復空狀態
+                activeContainer.classList.add('hidden');
+                emptyContainer.classList.remove('hidden');
+                
+                easelElement.classList.remove('border-slate-800');
+                easelElement.classList.add('border-dashed', 'border-slate-700');
+            }
+        }
+
+        /**************************************************************
+         * 6. 作品上傳邏輯 (含 GitHub 遠端 Commits)
+         **************************************************************/
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const studentName = document.getElementById('studentName').value.trim();
+            const artworkTitle = document.getElementById('artworkTitle').value.trim() || '未命名畫作';
+            const statusDiv = document.getElementById('uploadStatus');
+
+            if (!selectedFileBase64) {
+                showToast('請務必選擇一張畫作上傳！', 'error');
+                return;
+            }
+
+            // 更新按鈕加載狀態
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnContent = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1"></i> 上傳中...';
+
+            statusDiv.className = 'text-xs p-3 rounded-lg bg-slate-950 border border-slate-800 text-amber-200 flex items-center gap-2';
+            statusDiv.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 正在將作品處理至雲端，請稍候...';
+            statusDiv.classList.remove('hidden');
+
+            try {
+                if (hasValidGitHubConfig()) {
+                    // ================= 模式 A: GitHub 寫入 =================
+                    // 隨機數確保檔名不碰撞
+                    const randomId = Math.random().toString(36).substring(2, 8);
+                    // 檔名規格：[學生姓名]_[作品名稱]_[隨機碼].[原副檔名]
+                    const extension = selectedFileName.substring(selectedFileName.lastIndexOf('.')) || '.png';
+                    const secureFileName = `${studentName}_${artworkTitle}_${randomId}${extension}`;
+                    
+                    const uploadPath = config.path ? `${config.path}/${secureFileName}` : secureFileName;
+                    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${uploadPath}`;
+                    
+                    const payload = {
+                        message: `Upload artwork from ${studentName}: ${artworkTitle}`,
+                        content: selectedFileBase64,
+                        branch: config.branch
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${config.token}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/vnd.github+json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        throw new Error(errData.message || `HTTP 失敗: ${response.status}`);
+                    }
+
+                    showToast(`學生 ${studentName} 的作品成功 Commit 到 GitHub！`, 'success');
+                    
+                    // 從遠端重新拉取以確保清單絕對同步
+                    await fetchWorksFromGitHub();
+                    toggleUploadModal(false);
+
+                } else {
+                    // ================= 模式 B: 本地模擬上傳 =================
+                    // 模擬 1.5 秒延遲
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+
+                    const mockId = 'local-' + Date.now();
+                    const newWork = {
+                        id: mockId,
+                        title: artworkTitle,
+                        author: studentName,
+                        // 我們直接把剛剛 FileReader 的 base64 DataURL 作為模擬圖網址
+                        url: document.getElementById('imagePreview').src,
+                        isMock: false
+                    };
+
+                    // 更新本機數據庫
+                    studentWorks.unshift(newWork);
+                    
+                    // 保存進 LocalStorage 讓重新整理不消失
+                    localStorage.setItem('local_gallery_works', JSON.stringify(studentWorks));
+                    
+                    renderPreviewGrid();
+                    toggleUploadModal(false);
+                    showToast(`上傳成功！已將《${artworkTitle}》存入本地快取預覽中。`, 'success');
+                }
+            } catch (err) {
+                console.error(err);
+                statusDiv.className = 'text-xs p-3 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20';
+                statusDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> 上傳失敗：${err.message}。請確認設定中的帳密權限或網路連接。`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnContent;
+            }
+        }
+
+        /**************************************************************
+         * 7. GitHub 設定與程式碼預填工具
+         **************************************************************/
+        function saveSettings() {
+            const owner = document.getElementById('ghOwner').value.trim();
+            const repo = document.getElementById('ghRepo').value.trim();
+            const branch = document.getElementById('ghBranch').value.trim() || 'main';
+            const path = document.getElementById('ghPath').value.trim().replace(/^\/+/, ''); // 去除開頭斜線
+            const token = document.getElementById('ghToken').value.trim();
+
+            // 儲存至組態與 LocalStorage 供下次免填
+            config = { owner, repo, branch, path, token };
+            
+            localStorage.setItem('gh_owner', owner);
+            localStorage.setItem('gh_repo', repo);
+            localStorage.setItem('gh_branch', branch);
+            localStorage.setItem('gh_path', path);
+            localStorage.setItem('gh_token', token);
+
+            showToast('GitHub 配置已儲存！系統正在重新嘗試讀取數據。', 'success');
+            toggleSettingsModal(false);
+            
+            // 切換模式、重載頁面
+            updateModeIndicator();
+            loadGalleryData();
+        }
+
+        // 幫教師產生可放入 index.html 檔案中的配置程式碼片段
+        function generateHardcodedConfig() {
+            const owner = document.getElementById('ghOwner').value.trim();
+            const repo = document.getElementById('ghRepo').value.trim();
+            const branch = document.getElementById('ghBranch').value.trim() || 'main';
+            const path = document.getElementById('ghPath').value.trim().replace(/^\/+/, '');
+            const token = document.getElementById('ghToken').value.trim();
+
+            if (!owner || !repo || !token) {
+                alert('請先填寫完 GitHub 帳號、倉庫名稱及 Token 才能產生配置代碼！');
+                return;
+            }
+
+            const codeSnippet = `const HARDCODED_CONFIG = {
+    owner: '${owner}',
+    repo: '${repo}',
+    branch: '${branch}',
+    path: '${path}',
+    token: '${token}'
+};`;
+
+            const textarea = document.getElementById('configOutput');
+            textarea.value = codeSnippet;
+            textarea.classList.remove('hidden');
+            textarea.select();
+            showToast('配置程式碼已生成並全選，你可以直接複製黏貼了！', 'info');
+        }
+    </script>
+</body>
+</html>
